@@ -31,7 +31,7 @@ All three datasets report at the state level and are joined using **state FIPS c
 
 ### Steps
 
-1. Open `BorrowSmart_Data_Pipeline_Prototype.ipynb` in [Google Colab](https://colab.research.google.com/)
+1. Open `BorrowSmart_Data_Pipeline_Prototype_v2.ipynb` in [Google Colab](https://colab.research.google.com/)
 2. Select **Runtime → Run All**
 3. When prompted, upload the three data files from the `data/` folder:
    - `portfolio-by-location.xls`
@@ -135,7 +135,10 @@ The pipeline runs two rounds of validation:
 ```
 DSIO2010-Group1-BorrowSmart/
 ├── README.md
-├── BorrowSmart_Data_Pipeline_Prototype.ipynb
+├── requirements.txt
+├── .gitignore
+├── BorrowSmart_Data_Pipeline_Prototype_v2.ipynb   ← Primary notebook (run this one)
+├── BorrowSmart_Data_Pipeline_Prototype.ipynb      ← Original draft
 ├── data/
 │   ├── portfolio-by-location.xls
 │   ├── ACSDT5Y2024.B19013-Data.csv
@@ -143,6 +146,8 @@ DSIO2010-Group1-BorrowSmart/
 └── docs/
     └── DSIO2010_Group1_Proposal.pdf
 ```
+
+**Note on notebook versions:** The `_v2` notebook is the final reviewed version with added error handling, documented risk thresholds, exported chart, and function docstrings. The original notebook is preserved for version history.
 
 ## References
 
