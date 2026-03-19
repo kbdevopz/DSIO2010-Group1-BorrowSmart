@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Generated pipeline outputs (re-created on each run)
+borrowsmart_prototype_state_metrics.csv
+borrowsmart_prototype_top10_burden_states.csv
+borrowsmart_top10_burden_chart.png
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
