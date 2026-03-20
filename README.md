@@ -1,6 +1,6 @@
 # BorrowSmart Debt Burden Pipeline
 
-**DSIO 2010 — Group 1 Final Project (Option A: Working Prototype)**
+**DSIO 2010 -- Group 1 Final Project (Option A: Working Prototype)**
 
 Baisden, Cavazos, Ribero, Sparks
 
@@ -8,7 +8,7 @@ Baisden, Cavazos, Ribero, Sparks
 
 ## Project Description
 
-This project builds a prototype data pipeline for **BorrowSmart**, a fictional national nonprofit that helps borrowers manage federal student loan debt. The pipeline integrates three publicly available government datasets to generate a **state-level debt burden indicator** — a ratio comparing average student loan debt per borrower to median household income by state.
+This project builds a prototype data pipeline for **BorrowSmart**, a fictional national nonprofit that helps borrowers manage federal student loan debt. The pipeline integrates three publicly available government datasets to generate a **state-level debt burden indicator** -- a ratio comparing average student loan debt per borrower to median household income by state.
 
 The resulting dataset helps BorrowSmart advisors identify regions where borrowers may face greater repayment strain, enabling more targeted outreach and better-informed advisory consultations.
 
@@ -17,8 +17,8 @@ The resulting dataset helps BorrowSmart advisors identify regions where borrower
 | Dataset | Source | Format | Frequency |
 |---------|--------|--------|-----------|
 | Direct Loan Portfolio by Borrower Location | U.S. Dept. of Education, Office of Federal Student Aid | XLS | Quarterly |
-| Median Household Income (Table B19013) | U.S. Census Bureau, American Community Survey 5-Year Estimates (2020–2024) | CSV | Annual |
-| Consumer Credit Trends — Student Loans | Consumer Financial Protection Bureau (CFPB) | CSV | Monthly |
+| Median Household Income (Table B19013) | U.S. Census Bureau, American Community Survey 5-Year Estimates (2020-2024) | CSV | Annual |
+| Consumer Credit Trends -- Student Loans | Consumer Financial Protection Bureau (CFPB) | CSV | Monthly |
 
 All three datasets report at the state level and are joined using **state FIPS codes** as the common key, which avoids issues from inconsistent state name formatting across sources.
 
@@ -27,11 +27,11 @@ All three datasets report at the state level and are joined using **state FIPS c
 ### Prerequisites
 
 - A Google account (for Google Colab)
-- No local installation required — all dependencies are available in Colab by default (the notebook installs `xlrd` for XLS support)
+- No local installation required -- all dependencies are available in Colab by default (the notebook installs `xlrd` for XLS support)
 
 ### Steps
 
-1. Open `BorrowSmart_Data_Pipeline_Prototype_v2.ipynb` in [Google Colab](https://colab.research.google.com/)
+1. Open `BorrowSmart_Data_Pipeline_Prototype_v3.ipynb` in [Google Colab](https://colab.research.google.com/)
 2. Select **Runtime → Run All**
 3. When prompted, upload the three data files from the `data/` folder:
    - `portfolio-by-location.xls`
@@ -42,12 +42,13 @@ All three datasets report at the state level and are joined using **state FIPS c
 ### What the Pipeline Does
 
 1. **Loads** each dataset and parses headers, non-data rows, and units
-2. **Standardizes** state identifiers to numeric FIPS codes and converts financial units (billions → dollars, thousands → counts)
+2. **Standardizes** state identifiers to numeric FIPS codes and converts financial units (billions to dollars, thousands to counts)
 3. **Joins** all three datasets on `state_fips` (inner join)
 4. **Computes** `average_debt_per_borrower` and `debt_to_income_ratio` (the primary burden indicator)
-5. **Classifies** states into risk tiers: Low (< 0.45), Medium (0.45–0.60), High (> 0.60)
+5. **Classifies** states into risk tiers: Low (< 0.45), Medium (0.45-0.60), High (> 0.60)
 6. **Validates** row counts, join completeness (50 states), and zero missing values in critical fields
-7. **Exports** two CSV files and a bar chart visualization
+7. **Stores** the merged dataset in a SQLite database with a typed schema
+8. **Exports** two CSV files and a bar chart visualization
 
 ### Required Python Packages
 
@@ -57,6 +58,7 @@ All packages are pre-installed in Google Colab:
 - `numpy`
 - `matplotlib`
 - `xlrd` (installed automatically by the notebook)
+- `sqlite3` (Python standard library -- no install needed)
 
 ## Pipeline Architecture
 
@@ -71,8 +73,8 @@ All packages are pre-installed in Google Colab:
 ┌──────────────────────────────────────────────────────────────┐
 │              Data Cleaning & Standardization                  │
 │  • Parse XLS headers, skip non-data rows                     │
-│  • Map state names → FIPS codes                              │
-│  • Convert billions → dollars, thousands → counts            │
+│  • Map state names to FIPS codes                              │
+│  • Convert billions to dollars, thousands to counts            │
 └─────────────────────────┬────────────────────────────────────┘
                           │
                           ▼
@@ -92,9 +94,14 @@ All packages are pre-installed in Google Colab:
              ┌────────────┼─────────────┐
              ▼            ▼             ▼
     ┌─────────────┐ ┌──────────────┐ ┌──────────┐
-    │ state       │ │ top 10       │ │ bar chart│
-    │ metrics CSV │ │ burden CSV   │ │  (.png)  │
-    └─────────────┘ └──────────────┘ └──────────┘
+    │ SQLite DB   │ │ state        │ │ bar chart│
+    │ (storage)   │ │ metrics CSV  │ │  (.png)  │
+    └─────────────┘ └──────┬───────┘ └──────────┘
+                           │
+                    ┌──────┴───────┐
+                    │ top 10       │
+                    │ burden CSV   │
+                    └──────────────┘
 ```
 
 ## Outputs
@@ -103,6 +110,7 @@ All packages are pre-installed in Google Colab:
 |------|-------------|
 | `borrowsmart_prototype_state_metrics.csv` | Full state-level dataset with debt, income, ratios, risk labels, and YoY origination changes for all 51 states/DC |
 | `borrowsmart_prototype_top10_burden_states.csv` | The 10 states with the highest debt-to-income burden ratio |
+| `borrowsmart_prototype.db` | SQLite database with typed `state_metrics` table for ad-hoc queries |
 | Bar chart (displayed in notebook) | Horizontal bar chart of top 10 burden states |
 
 ### Key Findings (as of Sept. 30, 2025 FSA data)
@@ -113,14 +121,14 @@ The top 5 highest-burden states are Mississippi (0.66), Alabama (0.59), Louisian
 
 The pipeline runs two rounds of validation:
 
-**Post-Ingestion:** Row counts for each dataset (all 51 — 50 states + DC)
+**Post-Ingestion:** Row counts for each dataset (all 51 -- 50 states + DC)
 
 **Post-Merge / Pre-Export:**
-- Join completeness — confirms all 50 states present after merge
+- Join completeness -- confirms all 50 states present after merge
 - Zero missing values across all critical indicator columns (`state`, `state_fips`, `total_balance`, `borrowers`, `median_income`, `average_debt_per_borrower`, `debt_to_income_ratio`)
 - FSA reporting period extraction verified
 - Top 10 table confirmed to have exactly 10 rows
-- Total pipeline runtime: ~0.19 seconds
+- Total pipeline runtime: approx. 0.19 seconds
 
 ## Limitations
 
@@ -137,7 +145,8 @@ DSIO2010-Group1-BorrowSmart/
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
-├── BorrowSmart_Data_Pipeline_Prototype_v2.ipynb   ← Primary notebook (run this one)
+├── BorrowSmart_Data_Pipeline_Prototype_v3.ipynb   ← Primary notebook (run this one)
+├── BorrowSmart_Data_Pipeline_Prototype_v2.ipynb   ← Previous version
 ├── BorrowSmart_Data_Pipeline_Prototype.ipynb      ← Original draft
 ├── data/
 │   ├── portfolio-by-location.xls
@@ -147,12 +156,12 @@ DSIO2010-Group1-BorrowSmart/
     └── DSIO2010_Group1_Proposal.pdf
 ```
 
-**Note on notebook versions:** The `_v2` notebook is the final reviewed version with added error handling, documented risk thresholds, exported chart, and function docstrings. The original notebook is preserved for version history.
+**Note on notebook versions:** The `_v3` notebook is the current version, adding a SQLite storage layer, concrete success metrics, and a data lineage summary. The `_v2` notebook added error handling, documented risk thresholds, exported chart, and function docstrings. The original notebook is preserved for version history.
 
 ## References
 
 - Office of Federal Student Aid. (2025). Direct loan portfolio by borrower location [Data set]. U.S. Department of Education. https://studentaid.gov/data-center/student
-- U.S. Census Bureau. (2024). American Community Survey 5-year estimates (2020–2024): Median household income (Table B19013). https://data.census.gov/table/ACSDT5Y2024.B19013
+- U.S. Census Bureau. (2024). American Community Survey 5-year estimates (2020-2024): Median household income (Table B19013). https://data.census.gov/table/ACSDT5Y2024.B19013
 - Consumer Financial Protection Bureau. (2025). Consumer credit trends: Student loans [Data set]. https://www.consumerfinance.gov/data-research/consumer-credit-trends/student-loans/
 
 ## License

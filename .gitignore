@@ -8,6 +8,7 @@ __pycache__/
 borrowsmart_prototype_state_metrics.csv
 borrowsmart_prototype_top10_burden_states.csv
 borrowsmart_top10_burden_chart.png
+*.db
 
 # OS files
 .DS_Store
